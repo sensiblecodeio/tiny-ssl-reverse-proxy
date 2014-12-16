@@ -18,11 +18,11 @@ type SubnetRoute struct {
 }
 
 func (s *SubnetRoute) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-        host, _, err := net.SplitHostPort(r.RemoteAddr)
-        if err != nil {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
-        }
+	}
 	ip := net.ParseIP(host)
 	if ip == nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -60,11 +60,11 @@ func main() {
 	var handler, authenticated http.Handler
 	handler = httputil.NewSingleHostReverseProxy(url)
 
-        // Only really authenticated if htpasswdFile is specified
+	// Only really authenticated if htpasswdFile is specified
 	authenticated = handler
 
 	if htpasswdFile != "" {
-                // First check that the htpasswdFile exists and is readable
+		// First check that the htpasswdFile exists and is readable
 		fd, err := os.Open(htpasswdFile)
 		if err != nil {
 			log.Fatalln("Error opening htpasswdFile:", err)
