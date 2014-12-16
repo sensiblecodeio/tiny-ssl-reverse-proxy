@@ -52,9 +52,12 @@ func main() {
 		log.Fatalln("Fatal parsing -where:", err)
 	}
 
-	_, ipNet, err := net.ParseCIDR(subnet)
-	if err != nil {
-		log.Fatalln("Error parsing -subnet:", err)
+	var ipNet *net.IPNet
+	if subnet != "" {
+		_, ipNet, err = net.ParseCIDR(subnet)
+		if err != nil {
+			log.Fatalln("Error parsing -subnet:", err)
+		}
 	}
 
 	var handler, authenticated http.Handler
