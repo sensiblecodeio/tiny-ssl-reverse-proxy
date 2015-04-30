@@ -82,6 +82,8 @@ func main() {
 
 	if subnet != "" {
 		handler = &SubnetRoute{handler, authenticated, ipNet}
+	} else {
+		handler = authenticated
 	}
 
 	config := &tls.Config{
