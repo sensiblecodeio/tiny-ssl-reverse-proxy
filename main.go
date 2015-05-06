@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"os"
 
@@ -61,8 +60,11 @@ func main() {
 		}
 	}
 
+	proxy := NewWebsocketCapableReverseProxy(url)
+
 	var handler, authenticated http.Handler
-	handler = httputil.NewSingleHostReverseProxy(url)
+
+	handler = proxy
 
 	// Only really authenticated if htpasswdFile is specified
 	authenticated = handler
