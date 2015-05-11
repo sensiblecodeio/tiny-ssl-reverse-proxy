@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
 )
 
 func IsWebsocket(r *http.Request) bool {
@@ -37,23 +37,28 @@ func IsWebsocket(r *http.Request) bool {
 
 type WebsocketCapableReverseProxy struct {
 	*httputil.ReverseProxy
+
+	target *url.URL
 }
 
 func NewWebsocketCapableReverseProxy(url *url.URL) *WebsocketCapableReverseProxy {
 	return &WebsocketCapableReverseProxy{
 		httputil.NewSingleHostReverseProxy(url),
+		url,
 	}
 }
 
 func (p *WebsocketCapableReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if IsWebsocket(r) {
-		websocket.Handler(p.ServeWebsocket).ServeHTTP(w, r)
+		WebsocketHandlerFunc(p.ServeWebsocket).ServeHTTP(w, r)
 	} else {
 		p.ReverseProxy.ServeHTTP(w, r)
 	}
 }
 
-func (p *WebsocketCapableReverseProxy) ServeWebsocket(conn *websocket.Conn) {
+func (p *WebsocketCapableReverseProxy) ServeWebsocket(inConn *websocket.Conn, r *http.Request) {
+
+	defer inConn.Close()
 
 	transport := p.Transport
 	if transport == nil {
@@ -61,10 +66,14 @@ func (p *WebsocketCapableReverseProxy) ServeWebsocket(conn *websocket.Conn) {
 	}
 
 	outreq := new(http.Request)
-	r := conn.Request()
 	*outreq = *r // includes shallow copies of maps, but okay
 
 	p.Director(outreq)
+
+	// Note: Director rewrites outreq.URL.Host, but we need it to be the
+	// internal host for the websocket dial. The Host: header gets set to the
+	// inbound http request's `Host` header.
+	outreq.URL.Host = p.target.Host
 
 	switch outreq.URL.Scheme {
 	case "http", "":
@@ -83,35 +92,51 @@ func (p *WebsocketCapableReverseProxy) ServeWebsocket(conn *websocket.Conn) {
 		outreq.Header.Set("X-Forwarded-For", clientIP)
 	}
 
-	originConfig := &websocket.Config{Version: websocket.ProtocolVersionHybi13}
-	origin, _ := websocket.Origin(originConfig, r)
+	outreq.Header.Set("Host", r.Host)
 
-	config := &websocket.Config{
-		Location: outreq.URL,
-		Origin:   origin,
-		Header:   outreq.Header,
-		Version:  websocket.ProtocolVersionHybi13,
-	}
+	log.Printf("Establishing outbound websocket to %v", outreq.URL.String())
 
-	srv, err := websocket.DialConfig(config)
+	dial := websocket.DefaultDialer.Dial
+	outConn, resp, err := dial(outreq.URL.String(), outreq.Header)
 	if err != nil {
-		log.Printf("Bad gateway: %v", err)
+		if resp != nil {
+			log.Printf("outbound websocket dial error, status: %v, err: %v",
+				resp.StatusCode, err)
+		} else {
+			log.Printf("outbound websocket dial error, err: %v", err)
+		}
 		return
 	}
-
-	cp := func(dst io.WriteCloser, src io.Reader) {
-		// Ignore copy errors, likely to be a disconnect.
-		defer dst.Close()
-		_, _ = io.Copy(dst, src)
-	}
+	defer outConn.Close()
 
 	finish := make(chan struct{})
 	defer func() { <-finish }()
 
+	rawIn := inConn.UnderlyingConn()
+	rawOut := outConn.UnderlyingConn()
+
 	go func() {
 		defer close(finish)
-		cp(srv, conn)
+		_, _ = io.Copy(rawOut, rawIn)
 	}()
 
-	cp(conn, srv)
+	_, _ = io.Copy(rawIn, rawOut)
+}
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+type WebsocketHandlerFunc func(*websocket.Conn, *http.Request)
+
+func (wrapped WebsocketHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("Failed to upgrade: %v", err)
+		// Don't send any response here, Upgrade already does that on error.
+		return
+	}
+
+	wrapped(conn, r)
 }
