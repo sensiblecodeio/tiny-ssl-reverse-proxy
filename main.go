@@ -112,8 +112,8 @@ func main() {
 		err = server.ListenAndServeTLS(cert, key)
 	} else {
 		err = server.ListenAndServe()
-        }
-        if err != nil {
-                log.Fatalln(err)
-        }
+	}
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
