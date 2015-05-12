@@ -110,13 +110,10 @@ func main() {
 	server := &http.Server{Addr: listen, Handler: handler, TLSConfig: config}
 	if tlsFlag {
 		err = server.ListenAndServeTLS(cert, key)
-		if err != nil {
-			log.Fatalln("http.ListenAndServeTLS:", err)
-		}
 	} else {
 		err = server.ListenAndServe()
-		if err != nil {
-			log.Fatalln("http.ListenAndServe:", err)
-		}
-	}
+        }
+        if err != nil {
+                log.Fatalln(err)
+        }
 }
