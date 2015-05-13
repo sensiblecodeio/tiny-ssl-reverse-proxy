@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -50,15 +51,13 @@ func NewWebsocketCapableReverseProxy(url *url.URL) *WebsocketCapableReverseProxy
 
 func (p *WebsocketCapableReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if IsWebsocket(r) {
-		WebsocketHandlerFunc(p.ServeWebsocket).ServeHTTP(w, r)
+		p.ServeWebsocket(w, r)
 	} else {
 		p.ReverseProxy.ServeHTTP(w, r)
 	}
 }
 
-func (p *WebsocketCapableReverseProxy) ServeWebsocket(inConn *websocket.Conn, r *http.Request) {
-
-	defer inConn.Close()
+func (p *WebsocketCapableReverseProxy) ServeWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	transport := p.Transport
 	if transport == nil {
@@ -102,12 +101,27 @@ func (p *WebsocketCapableReverseProxy) ServeWebsocket(inConn *websocket.Conn, r 
 		if resp != nil {
 			log.Printf("outbound websocket dial error, status: %v, err: %v",
 				resp.StatusCode, err)
+			w.WriteHeader(resp.StatusCode)
+			_, err := io.Copy(w, resp.Body)
+			if err != nil {
+				log.Printf("error copying outbound body to response. err: %v", err)
+			}
 		} else {
 			log.Printf("outbound websocket dial error, err: %v", err)
+			w.WriteHeader(503)
+			fmt.Fprintf(w, "outbound websocket dial error, err: %v", err)
 		}
 		return
 	}
 	defer outConn.Close()
+
+	inConn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("Failed to upgrade: %v", err)
+		// Don't send any response here, Upgrade already does that on error.
+		return
+	}
+	defer inConn.Close()
 
 	finish := make(chan struct{})
 	defer func() { <-finish }()
@@ -126,17 +140,4 @@ func (p *WebsocketCapableReverseProxy) ServeWebsocket(inConn *websocket.Conn, r 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-}
-
-type WebsocketHandlerFunc func(*websocket.Conn, *http.Request)
-
-func (wrapped WebsocketHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Printf("Failed to upgrade: %v", err)
-		// Don't send any response here, Upgrade already does that on error.
-		return
-	}
-
-	wrapped(conn, r)
 }
