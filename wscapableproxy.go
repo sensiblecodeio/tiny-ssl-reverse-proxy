@@ -108,8 +108,8 @@ func (p *WebsocketCapableReverseProxy) ServeWebsocket(w http.ResponseWriter, r *
 			}
 		} else {
 			log.Printf("outbound websocket dial error, err: %v", err)
-			w.WriteHeader(503)
-			fmt.Fprintf(w, "outbound websocket dial error, err: %v", err)
+			w.WriteHeader(502)
+			fmt.Fprintln(w, "Bad Gateway")
 		}
 		return
 	}
