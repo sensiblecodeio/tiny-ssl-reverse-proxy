@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -108,8 +107,7 @@ func (p *WebsocketCapableReverseProxy) ServeWebsocket(w http.ResponseWriter, r *
 			}
 		} else {
 			log.Printf("outbound websocket dial error, err: %v", err)
-			w.WriteHeader(502)
-			fmt.Fprintln(w, "Bad Gateway")
+			http.Error(w, "502 Bad Gateway", http.StatusBadGateway)
 		}
 		return
 	}
