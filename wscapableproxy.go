@@ -121,14 +121,10 @@ func (p *WebsocketCapableReverseProxy) ServeWebsocket(w http.ResponseWriter, r *
 	}
 	defer inConn.Close()
 
-	finish := make(chan struct{})
-	defer func() { <-finish }()
-
 	rawIn := inConn.UnderlyingConn()
 	rawOut := outConn.UnderlyingConn()
 
 	go func() {
-		defer close(finish)
 		_, _ = io.Copy(rawOut, rawIn)
 	}()
 
