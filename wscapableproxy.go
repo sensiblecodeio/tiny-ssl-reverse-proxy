@@ -56,6 +56,31 @@ func (p *WebsocketCapableReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.
 	}
 }
 
+// Hop-by-hop headers. These are removed when sent to the backend.
+// http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html
+var hopHeaders = []string{
+	"Connection",
+	"Keep-Alive",
+	"Proxy-Authenticate",
+	"Proxy-Authorization",
+	"Te", // canonicalized version of "TE"
+	"Trailers",
+	"Transfer-Encoding",
+	"Upgrade",
+
+	// Headers used in Websocket (by inspection)
+	"Sec-Websocket-Key",
+	"Sec-Websocket-Version",
+}
+
+func copyHeader(dst, src http.Header) {
+	for k, vv := range src {
+		for _, v := range vv {
+			dst.Add(k, v)
+		}
+	}
+}
+
 func (p *WebsocketCapableReverseProxy) ServeWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	transport := p.Transport
@@ -91,6 +116,21 @@ func (p *WebsocketCapableReverseProxy) ServeWebsocket(w http.ResponseWriter, r *
 	}
 
 	outreq.Header.Set("Host", r.Host)
+
+	// Avoid duplicating the hop-by-hop headers.
+	// Copied from:
+	// https://github.com/golang/go/blob/b83b01110090c41fc24750ecabf0b87c5fbff233/src/net/http/httputil/reverseproxy.go#L164-L179
+	copiedHeaders := false
+	for _, h := range hopHeaders {
+		if outreq.Header.Get(h) != "" {
+			if !copiedHeaders {
+				outreq.Header = make(http.Header)
+				copyHeader(outreq.Header, r.Header)
+				copiedHeaders = true
+			}
+			outreq.Header.Del(h)
+		}
+	}
 
 	log.Printf("Establishing outbound websocket to %v", outreq.URL.String())
 
