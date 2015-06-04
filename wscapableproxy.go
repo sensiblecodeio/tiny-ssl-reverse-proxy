@@ -41,11 +41,10 @@ type WebsocketCapableReverseProxy struct {
 	target *url.URL
 }
 
-func NewWebsocketCapableReverseProxy(url *url.URL) *WebsocketCapableReverseProxy {
-	return &WebsocketCapableReverseProxy{
-		httputil.NewSingleHostReverseProxy(url),
-		url,
-	}
+func NewWebsocketCapableReverseProxy(
+	proxy *httputil.ReverseProxy, url *url.URL,
+) *WebsocketCapableReverseProxy {
+	return &WebsocketCapableReverseProxy{proxy, url}
 }
 
 func (p *WebsocketCapableReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {

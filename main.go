@@ -1,16 +1,49 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"flag"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 
 	auth "github.com/abbot/go-http-auth"
 )
+
+var message = `<!DOCTYPE html><html>
+<style>
+body {
+	font-family: fantasy;
+	text-align: center;
+	padding-top: 20%;
+	background-color: #f1f6f8;
+}
+</style>
+<body>
+<h1>503 Backend Unavailable</h1>
+<p>Sorry, we&lsquo;re having a brief problem. You can retry.</p>
+<p>If the problem persists, please get in touch.</p>
+</body>
+</html>`
+
+type ConnectionErrorHandler struct{ http.RoundTripper }
+
+func (c *ConnectionErrorHandler) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := c.RoundTripper.RoundTrip(req)
+	if _, ok := err.(*net.OpError); ok {
+		r := &http.Response{
+			StatusCode: http.StatusServiceUnavailable,
+			Body:       ioutil.NopCloser(bytes.NewBufferString(message)),
+		}
+		return r, nil
+	}
+	return resp, err
+}
 
 type SubnetRoute struct {
 	inside, outside http.Handler
@@ -62,7 +95,10 @@ func main() {
 		}
 	}
 
-	proxy := NewWebsocketCapableReverseProxy(url)
+	httpProxy := httputil.NewSingleHostReverseProxy(url)
+	httpProxy.Transport = &ConnectionErrorHandler{http.DefaultTransport}
+
+	proxy := NewWebsocketCapableReverseProxy(httpProxy, url)
 
 	var handler, authenticated http.Handler
 
