@@ -152,6 +152,8 @@ func main() {
 		},
 	}
 
+	handler = &LoggingMiddleware{handler}
+
 	server := &http.Server{Addr: listen, Handler: handler, TLSConfig: config}
 
 	switch {
