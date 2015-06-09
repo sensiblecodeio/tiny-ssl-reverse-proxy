@@ -13,6 +13,8 @@ import (
 	"os"
 
 	auth "github.com/abbot/go-http-auth"
+
+	"github.com/scraperwiki/tiny-ssl-reverse-proxy/proxyprotocol"
 )
 
 var message = `<!DOCTYPE html><html>
@@ -71,7 +73,7 @@ func (s *SubnetRoute) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	var (
 		listen, cert, key, htpasswdFile, where, subnet string
-		tlsFlag                                        bool
+		tlsFlag, behindTCPProxy                        bool
 	)
 	flag.StringVar(&listen, "listen", ":443", "Bind address to listen on")
 	flag.StringVar(&key, "key", "/etc/ssl/private/key.pem", "Path to PEM key")
@@ -80,6 +82,7 @@ func main() {
 	flag.StringVar(&where, "where", "http://localhost:80", "Place to forward connections to")
 	flag.StringVar(&subnet, "subnet", "", "If specified, subnet which can circumvent htpasswd authorization")
 	flag.BoolVar(&tlsFlag, "tls", true, "accept HTTPS connections")
+	flag.BoolVar(&behindTCPProxy, "behind-tcp-proxy", false, "running behind TCP proxy (such as ELB or HAProxy)")
 	flag.Parse()
 
 	url, err := url.Parse(where)
@@ -150,12 +153,17 @@ func main() {
 	}
 
 	server := &http.Server{Addr: listen, Handler: handler, TLSConfig: config}
-	if tlsFlag {
+
+	switch {
+	case tlsFlag && behindTCPProxy:
+		err = proxyprotocol.BehindTCPProxyListenAndServeTLS(server, cert, key)
+	case behindTCPProxy:
+		err = proxyprotocol.BehindTCPProxyListenAndServe(server)
+	case tlsFlag:
 		err = server.ListenAndServeTLS(cert, key)
-	} else {
+	default:
 		err = server.ListenAndServe()
 	}
-	if err != nil {
-		log.Fatalln(err)
-	}
+
+	log.Fatalln(err)
 }
