@@ -1,0 +1,6 @@
+[submodule "vendor/github.com/abbot/go-http-auth"]
+	path = vendor/github.com/abbot/go-http-auth
+	url = https://github.com/abbot/go-http-auth
+[submodule "vendor/github.com/gorilla/websocket"]
+	path = vendor/github.com/gorilla/websocket
+	url = https://github.com/gorilla/websocket
