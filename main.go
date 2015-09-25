@@ -13,6 +13,7 @@ import (
 	"os"
 
 	auth "github.com/abbot/go-http-auth"
+	"golang.org/x/net/http2"
 
 	"github.com/scraperwiki/tiny-ssl-reverse-proxy/proxyprotocol"
 )
@@ -73,7 +74,7 @@ func (s *SubnetRoute) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	var (
 		listen, cert, key, htpasswdFile, where, subnet string
-		useTLS, useLogging, behindTCPProxy             bool
+		useTLS, useLogging, useHTTP2, behindTCPProxy   bool
 	)
 	flag.StringVar(&listen, "listen", ":443", "Bind address to listen on")
 	flag.StringVar(&key, "key", "/etc/ssl/private/key.pem", "Path to PEM key")
@@ -83,6 +84,7 @@ func main() {
 	flag.StringVar(&subnet, "subnet", "", "If specified, subnet which can circumvent htpasswd authorization")
 	flag.BoolVar(&useTLS, "tls", true, "accept HTTPS connections")
 	flag.BoolVar(&useLogging, "logging", true, "log requests")
+	flag.BoolVar(&useHTTP2, "http2", true, "enable http2")
 	flag.BoolVar(&behindTCPProxy, "behind-tcp-proxy", false, "running behind TCP proxy (such as ELB or HAProxy)")
 	flag.Parse()
 
@@ -158,6 +160,13 @@ func main() {
 	}
 
 	server := &http.Server{Addr: listen, Handler: handler, TLSConfig: config}
+
+	if useHTTP2 {
+		if !useTLS {
+			log.Fatal("-http2 available only if -tls set")
+		}
+		http2.ConfigureServer(server, nil)
+	}
 
 	switch {
 	case useTLS && behindTCPProxy:
