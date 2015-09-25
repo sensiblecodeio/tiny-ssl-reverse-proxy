@@ -73,7 +73,7 @@ func (s *SubnetRoute) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	var (
 		listen, cert, key, htpasswdFile, where, subnet string
-		tlsFlag, behindTCPProxy                        bool
+		useTLS, useLogging, behindTCPProxy             bool
 	)
 	flag.StringVar(&listen, "listen", ":443", "Bind address to listen on")
 	flag.StringVar(&key, "key", "/etc/ssl/private/key.pem", "Path to PEM key")
@@ -81,7 +81,8 @@ func main() {
 	flag.StringVar(&htpasswdFile, "htpasswdFile", "", "File to use for htpasswd protected access")
 	flag.StringVar(&where, "where", "http://localhost:80", "Place to forward connections to")
 	flag.StringVar(&subnet, "subnet", "", "If specified, subnet which can circumvent htpasswd authorization")
-	flag.BoolVar(&tlsFlag, "tls", true, "accept HTTPS connections")
+	flag.BoolVar(&useTLS, "tls", true, "accept HTTPS connections")
+	flag.BoolVar(&useLogging, "logging", true, "log requests")
 	flag.BoolVar(&behindTCPProxy, "behind-tcp-proxy", false, "running behind TCP proxy (such as ELB or HAProxy)")
 	flag.Parse()
 
@@ -152,14 +153,18 @@ func main() {
 		},
 	}
 
+	if useLogging {
+		handler = &LoggingMiddleware{handler}
+	}
+
 	server := &http.Server{Addr: listen, Handler: handler, TLSConfig: config}
 
 	switch {
-	case tlsFlag && behindTCPProxy:
+	case useTLS && behindTCPProxy:
 		err = proxyprotocol.BehindTCPProxyListenAndServeTLS(server, cert, key)
 	case behindTCPProxy:
 		err = proxyprotocol.BehindTCPProxyListenAndServe(server)
-	case tlsFlag:
+	case useTLS:
 		err = server.ListenAndServeTLS(cert, key)
 	default:
 		err = server.ListenAndServe()
