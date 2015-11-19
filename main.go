@@ -110,7 +110,7 @@ func main() {
 
 	originalHandler := handler
 	handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Header.Add("X-Forwarded-Proto", "https")
+		r.Header.Set("X-Forwarded-Proto", "https")
 		originalHandler.ServeHTTP(w, r)
 	})
 
