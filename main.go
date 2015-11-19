@@ -10,9 +10,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
-
-	auth "github.com/abbot/go-http-auth"
 
 	"github.com/scraperwiki/tiny-ssl-reverse-proxy/proxyprotocol"
 )
@@ -47,40 +44,15 @@ func (c *ConnectionErrorHandler) RoundTrip(req *http.Request) (*http.Response, e
 	return resp, err
 }
 
-type SubnetRoute struct {
-	inside, outside http.Handler
-	*net.IPNet
-}
-
-func (s *SubnetRoute) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	ip := net.ParseIP(host)
-	if ip == nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	if s.Contains(ip) {
-		s.inside.ServeHTTP(w, r)
-	} else {
-		s.outside.ServeHTTP(w, r)
-	}
-}
-
 func main() {
 	var (
-		listen, cert, key, htpasswdFile, where, subnet string
-		useTLS, useLogging, behindTCPProxy             bool
+		listen, cert, key, where           string
+		useTLS, useLogging, behindTCPProxy bool
 	)
 	flag.StringVar(&listen, "listen", ":443", "Bind address to listen on")
 	flag.StringVar(&key, "key", "/etc/ssl/private/key.pem", "Path to PEM key")
 	flag.StringVar(&cert, "cert", "/etc/ssl/private/cert.pem", "Path to PEM certificate")
-	flag.StringVar(&htpasswdFile, "htpasswdFile", "", "File to use for htpasswd protected access")
 	flag.StringVar(&where, "where", "http://localhost:80", "Place to forward connections to")
-	flag.StringVar(&subnet, "subnet", "", "If specified, subnet which can circumvent htpasswd authorization")
 	flag.BoolVar(&useTLS, "tls", true, "accept HTTPS connections")
 	flag.BoolVar(&useLogging, "logging", true, "log requests")
 	flag.BoolVar(&behindTCPProxy, "behind-tcp-proxy", false, "running behind TCP proxy (such as ELB or HAProxy)")
@@ -91,50 +63,20 @@ func main() {
 		log.Fatalln("Fatal parsing -where:", err)
 	}
 
-	var ipNet *net.IPNet
-	if subnet != "" {
-		_, ipNet, err = net.ParseCIDR(subnet)
-		if err != nil {
-			log.Fatalln("Error parsing -subnet:", err)
-		}
-	}
-
 	httpProxy := httputil.NewSingleHostReverseProxy(url)
 	httpProxy.Transport = &ConnectionErrorHandler{http.DefaultTransport}
 
 	proxy := NewWebsocketCapableReverseProxy(httpProxy, url)
 
-	var handler, authenticated http.Handler
+	var handler http.Handler
 
 	handler = proxy
 
 	originalHandler := handler
 	handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Header.Add("X-Forwarded-Proto", "https")
+		r.Header.Set("X-Forwarded-Proto", "https")
 		originalHandler.ServeHTTP(w, r)
 	})
-
-	// Only really authenticated if htpasswdFile is specified
-	authenticated = handler
-
-	if htpasswdFile != "" {
-		// First check that the htpasswdFile exists and is readable
-		fd, err := os.Open(htpasswdFile)
-		if err != nil {
-			log.Fatalln("Error opening htpasswdFile:", err)
-		}
-		fd.Close()
-
-		secrets := auth.HtpasswdFileProvider(htpasswdFile)
-		authenticator := auth.NewBasicAuthenticator(where, secrets)
-		authenticated = auth.JustCheck(authenticator, handler.ServeHTTP)
-	}
-
-	if subnet != "" {
-		handler = &SubnetRoute{handler, authenticated, ipNet}
-	} else {
-		handler = authenticated
-	}
 
 	config := &tls.Config{
 		MinVersion: tls.VersionTLS10,
