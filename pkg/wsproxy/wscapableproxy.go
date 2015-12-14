@@ -1,3 +1,4 @@
+// Package wsproxy implements a HTTP proxy capable of forwarding websocket connections.
 package wsproxy
 
 import (
