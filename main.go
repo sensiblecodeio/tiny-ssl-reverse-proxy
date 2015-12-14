@@ -11,6 +11,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 
+	"github.com/scraperwiki/tiny-ssl-reverse-proxy/pkg/wsproxy"
 	"github.com/scraperwiki/tiny-ssl-reverse-proxy/proxyprotocol"
 )
 
@@ -66,7 +67,7 @@ func main() {
 	httpProxy := httputil.NewSingleHostReverseProxy(url)
 	httpProxy.Transport = &ConnectionErrorHandler{http.DefaultTransport}
 
-	proxy := NewWebsocketCapableReverseProxy(httpProxy, url)
+	proxy := wsproxy.NewReverseProxy(httpProxy, url)
 
 	var handler http.Handler
 

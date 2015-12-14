@@ -1,4 +1,4 @@
-package main
+package wsproxy
 
 import (
 	"io"
@@ -35,19 +35,19 @@ func IsWebsocket(r *http.Request) bool {
 	return true
 }
 
-type WebsocketCapableReverseProxy struct {
+type ReverseProxy struct {
 	*httputil.ReverseProxy
 
 	target *url.URL
 }
 
-func NewWebsocketCapableReverseProxy(
+func NewReverseProxy(
 	proxy *httputil.ReverseProxy, url *url.URL,
-) *WebsocketCapableReverseProxy {
-	return &WebsocketCapableReverseProxy{proxy, url}
+) *ReverseProxy {
+	return &ReverseProxy{proxy, url}
 }
 
-func (p *WebsocketCapableReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if IsWebsocket(r) {
 		p.ServeWebsocket(w, r)
 	} else {
@@ -80,7 +80,7 @@ func copyHeader(dst, src http.Header) {
 	}
 }
 
-func (p *WebsocketCapableReverseProxy) ServeWebsocket(w http.ResponseWriter, r *http.Request) {
+func (p *ReverseProxy) ServeWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	transport := p.Transport
 	if transport == nil {
