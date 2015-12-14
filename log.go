@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"time"
 )
@@ -29,6 +32,22 @@ func (r *ResponseRecorder) Header() http.Header {
 func (r *ResponseRecorder) WriteHeader(n int) {
 	r.ResponseWriter.WriteHeader(n)
 	r.response = n
+}
+
+func (r *ResponseRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := r.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("Not a Hijacker: %T", r.ResponseWriter)
+	}
+	return hijacker.Hijack()
+}
+
+func (r *ResponseRecorder) Flush() {
+	flusher, ok := r.ResponseWriter.(http.Flusher)
+	if !ok {
+		return
+	}
+	flusher.Flush()
 }
 
 type WriteCounter struct {
