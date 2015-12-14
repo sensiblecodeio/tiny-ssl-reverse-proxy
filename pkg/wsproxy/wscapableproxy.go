@@ -1,4 +1,5 @@
-package main
+// Package wsproxy implements a HTTP proxy capable of forwarding websocket connections.
+package wsproxy
 
 import (
 	"io"
@@ -6,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -35,19 +35,11 @@ func IsWebsocket(r *http.Request) bool {
 	return true
 }
 
-type WebsocketCapableReverseProxy struct {
+type ReverseProxy struct {
 	*httputil.ReverseProxy
-
-	target *url.URL
 }
 
-func NewWebsocketCapableReverseProxy(
-	proxy *httputil.ReverseProxy, url *url.URL,
-) *WebsocketCapableReverseProxy {
-	return &WebsocketCapableReverseProxy{proxy, url}
-}
-
-func (p *WebsocketCapableReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if IsWebsocket(r) {
 		p.ServeWebsocket(w, r)
 	} else {
@@ -80,7 +72,7 @@ func copyHeader(dst, src http.Header) {
 	}
 }
 
-func (p *WebsocketCapableReverseProxy) ServeWebsocket(w http.ResponseWriter, r *http.Request) {
+func (p *ReverseProxy) ServeWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	transport := p.Transport
 	if transport == nil {
@@ -91,11 +83,6 @@ func (p *WebsocketCapableReverseProxy) ServeWebsocket(w http.ResponseWriter, r *
 	*outreq = *r // includes shallow copies of maps, but okay
 
 	p.Director(outreq)
-
-	// Note: Director rewrites outreq.URL.Host, but we need it to be the
-	// internal host for the websocket dial. The Host: header gets set to the
-	// inbound http request's `Host` header.
-	outreq.URL.Host = p.target.Host
 
 	switch outreq.URL.Scheme {
 	case "http", "":
