@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -37,14 +36,6 @@ func IsWebsocket(r *http.Request) bool {
 
 type ReverseProxy struct {
 	*httputil.ReverseProxy
-
-	target *url.URL
-}
-
-func NewReverseProxy(
-	proxy *httputil.ReverseProxy, url *url.URL,
-) *ReverseProxy {
-	return &ReverseProxy{proxy, url}
 }
 
 func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -91,11 +82,6 @@ func (p *ReverseProxy) ServeWebsocket(w http.ResponseWriter, r *http.Request) {
 	*outreq = *r // includes shallow copies of maps, but okay
 
 	p.Director(outreq)
-
-	// Note: Director rewrites outreq.URL.Host, but we need it to be the
-	// internal host for the websocket dial. The Host: header gets set to the
-	// inbound http request's `Host` header.
-	outreq.URL.Host = p.target.Host
 
 	switch outreq.URL.Scheme {
 	case "http", "":

@@ -67,7 +67,7 @@ func main() {
 	httpProxy := httputil.NewSingleHostReverseProxy(url)
 	httpProxy.Transport = &ConnectionErrorHandler{http.DefaultTransport}
 
-	proxy := wsproxy.NewReverseProxy(httpProxy, url)
+	proxy := &wsproxy.ReverseProxy{httpProxy}
 
 	var handler http.Handler
 
