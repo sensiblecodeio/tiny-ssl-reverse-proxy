@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/tls"
 	"flag"
 	"io/ioutil"
 	"log"
@@ -79,28 +78,11 @@ func main() {
 		originalHandler.ServeHTTP(w, r)
 	})
 
-	config := &tls.Config{
-		MinVersion: tls.VersionTLS10,
-		CipherSuites: []uint16{
-			// Note: RC4 is removed.
-			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
-			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
-			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-		},
-	}
-
 	if useLogging {
 		handler = &LoggingMiddleware{handler}
 	}
 
-	server := &http.Server{Addr: listen, Handler: handler, TLSConfig: config}
+	server := &http.Server{Addr: listen, Handler: handler}
 
 	switch {
 	case useTLS && behindTCPProxy:
