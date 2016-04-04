@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 
 	"github.com/scraperwiki/tiny-ssl-reverse-proxy/pkg/wsproxy"
 	"github.com/scraperwiki/tiny-ssl-reverse-proxy/proxyprotocol"
@@ -48,6 +49,7 @@ func main() {
 	var (
 		listen, cert, key, where           string
 		useTLS, useLogging, behindTCPProxy bool
+		flushInterval                      time.Duration
 	)
 	flag.StringVar(&listen, "listen", ":443", "Bind address to listen on")
 	flag.StringVar(&key, "key", "/etc/ssl/private/key.pem", "Path to PEM key")
@@ -56,6 +58,7 @@ func main() {
 	flag.BoolVar(&useTLS, "tls", true, "accept HTTPS connections")
 	flag.BoolVar(&useLogging, "logging", true, "log requests")
 	flag.BoolVar(&behindTCPProxy, "behind-tcp-proxy", false, "running behind TCP proxy (such as ELB or HAProxy)")
+	flag.DurationVar(&flushInterval, "flush-interval", 0, "minimum duration between flushes to the client (default: off)")
 	flag.Parse()
 
 	url, err := url.Parse(where)
@@ -65,6 +68,7 @@ func main() {
 
 	httpProxy := httputil.NewSingleHostReverseProxy(url)
 	httpProxy.Transport = &ConnectionErrorHandler{http.DefaultTransport}
+	httpProxy.FlushInterval = flushInterval
 
 	proxy := &wsproxy.ReverseProxy{httpProxy}
 
