@@ -1,3 +1,25 @@
+DIST_NAME=tiny-ssl-reverse-proxy
+VERSION?=$(shell git describe --tags --always --dirty)
+
+all: build
+
+build:
+	go build
+
+install: build
+	go install
+
+dist: dist/$(DIST_NAME)_darwin_amd64 dist/$(DIST_NAME)_linux_amd64
+
+dist/$(DIST_NAME)_darwin_amd64:
+	GOOS=darwin GOARCH=amd64 go build -o $@
+
+dist/$(DIST_NAME)_linux_amd64:
+	GOOS=linux GOARCH=amd64 go build -o $@
+
+rel: dist
+	hub release create -a dist $(VERSION)
+
 fakecert: .FORCE
 	openssl req \
 		-x509 \
@@ -10,3 +32,5 @@ fakecert: .FORCE
 		-days 365
 
 .FORCE:
+
+.PHONY: all build install rel
