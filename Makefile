@@ -31,6 +31,10 @@ fakecert: .FORCE
 		-subj '/L=Earth/O=Fake Certificate/CN=localhost/' \
 		-days 365
 
+release:
+	hub release create -a tiny-ssl-reverse-proxy_linux_amd64 -a tiny-ssl-reverse-proxy_darwin_amd64 $(shell git describe --tags --exact-match)
+
+
 .FORCE:
 
 .PHONY: all build install rel
