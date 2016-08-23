@@ -5,8 +5,6 @@ import (
 	"net"
 	"net/http"
 	"time"
-
-	"golang.org/x/net/http2"
 )
 
 // Copied verbatim from net/http's server.go.
@@ -38,23 +36,7 @@ func BehindTCPProxyListenAndServeTLS(srv *http.Server, certFile, keyFile string)
 	// Ensure we don't modify *TLSConfig, in case it is reused.
 	srv.TLSConfig = cloneTLSClientConfig(srv.TLSConfig)
 
-	err := http2.ConfigureServer(srv, nil)
-	if err != nil {
-		return err
-	}
-
-	foundHTTP1 := false
-	for _, proto := range srv.TLSConfig.NextProtos {
-		if proto == "http/1.1" {
-			foundHTTP1 = true
-			break
-		}
-	}
-
-	if !foundHTTP1 {
-		srv.TLSConfig.NextProtos = append(srv.TLSConfig.NextProtos, "http/1.1")
-	}
-
+	var err error
 	srv.TLSConfig.Certificates = make([]tls.Certificate, 1)
 	srv.TLSConfig.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
