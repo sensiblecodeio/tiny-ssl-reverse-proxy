@@ -36,6 +36,8 @@ func BehindTCPProxyListenAndServeTLS(srv *http.Server, certFile, keyFile string)
 	// Ensure we don't modify *TLSConfig, in case it is reused.
 	srv.TLSConfig = cloneTLSClientConfig(srv.TLSConfig)
 
+	srv.TLSConfig.NextProtos = append(srv.TLSConfig.NextProtos, "h2")
+
 	var err error
 	srv.TLSConfig.Certificates = make([]tls.Certificate, 1)
 	srv.TLSConfig.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
