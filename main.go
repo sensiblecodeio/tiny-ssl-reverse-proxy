@@ -3,17 +3,22 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/scraperwiki/tiny-ssl-reverse-proxy/pkg/wsproxy"
 	"github.com/scraperwiki/tiny-ssl-reverse-proxy/proxyprotocol"
 )
+
+// Version number
+const Version = "0.13.0"
 
 var message = `<!DOCTYPE html><html>
 <style>
@@ -59,6 +64,11 @@ func main() {
 	flag.BoolVar(&useLogging, "logging", true, "log requests")
 	flag.BoolVar(&behindTCPProxy, "behind-tcp-proxy", false, "running behind TCP proxy (such as ELB or HAProxy)")
 	flag.DurationVar(&flushInterval, "flush-interval", 0, "minimum duration between flushes to the client (default: off)")
+	oldUsage := flag.Usage
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "\n%v version %v\n\n", os.Args[0], Version)
+		oldUsage()
+	}
 	flag.Parse()
 
 	url, err := url.Parse(where)
