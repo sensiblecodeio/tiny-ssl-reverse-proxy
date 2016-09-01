@@ -88,6 +88,9 @@ func main() {
 
 	originalHandler := handler
 	handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/_version" {
+			w.Header().Add("X-Tiny-SSL-Version", Version)
+		}
 		r.Header.Set("X-Forwarded-Proto", "https")
 		originalHandler.ServeHTTP(w, r)
 	})
