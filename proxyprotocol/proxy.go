@@ -8,7 +8,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/scraperwiki/tiny-ssl-reverse-proxy/proxyprotocol/proxyline"
+	"github.com/sensiblecodeio/tiny-ssl-reverse-proxy/proxyprotocol/proxyline"
 )
 
 type Accept struct {
