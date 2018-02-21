@@ -21,6 +21,10 @@ import (
 const Version = "0.13.1"
 
 var message = `<!DOCTYPE html><html>
+<head>
+<title>
+Backend Unavailable
+</title>
 <style>
 body {
 	font-family: fantasy;
@@ -29,6 +33,7 @@ body {
 	background-color: #f1f6f8;
 }
 </style>
+</head>
 <body>
 <h1>503 Backend Unavailable</h1>
 <p>Sorry, we&lsquo;re having a brief problem. You can retry.</p>
