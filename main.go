@@ -18,7 +18,7 @@ import (
 )
 
 // Version number
-const Version = "0.13.1"
+const Version = "0.13.2"
 
 var message = `<!DOCTYPE html><html>
 <head>
@@ -45,6 +45,10 @@ type ConnectionErrorHandler struct{ http.RoundTripper }
 
 func (c *ConnectionErrorHandler) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp, err := c.RoundTripper.RoundTrip(req)
+	if err != nil {
+		log.Printf("Error: backend request failed for %v: %v",
+			req.RemoteAddr, err)
+	}
 	if _, ok := err.(*net.OpError); ok {
 		r := &http.Response{
 			StatusCode: http.StatusServiceUnavailable,
