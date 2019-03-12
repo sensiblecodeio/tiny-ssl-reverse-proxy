@@ -13,7 +13,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/sensiblecodeio/tiny-ssl-reverse-proxy/pkg/wsproxy"
 	"github.com/sensiblecodeio/tiny-ssl-reverse-proxy/proxyprotocol"
 )
 
@@ -89,11 +88,9 @@ func main() {
 	httpProxy.Transport = &ConnectionErrorHandler{http.DefaultTransport}
 	httpProxy.FlushInterval = flushInterval
 
-	proxy := &wsproxy.ReverseProxy{httpProxy}
-
 	var handler http.Handler
 
-	handler = proxy
+	handler = httpProxy
 
 	originalHandler := handler
 	handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
