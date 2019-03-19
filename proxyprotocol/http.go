@@ -59,7 +59,7 @@ func BehindTCPProxyListenAndServeTLS(srv *http.Server, certFile, keyFile string)
 	return srv.Serve(listener)
 }
 
-// ListenAndServe listens on the TCP network address srv.Addr and then
+// BehindTCPProxyListenAndServe listens on the TCP network address srv.Addr and then
 // calls Serve to handle requests on incoming connections.  If
 // srv.Addr is blank, ":http" is used.
 func BehindTCPProxyListenAndServe(srv *http.Server) error {
