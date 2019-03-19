@@ -116,7 +116,7 @@ func (c *Conn) Read(bs []byte) (int, error) {
 	return c.Reader.Read(bs)
 }
 
-// Return the specified local addr, if there is one.
+// LocalAddr returns the specified local addr, if there is one.
 func (c *Conn) LocalAddr() net.Addr {
 	if c.localAddr != nil {
 		return c.localAddr
@@ -124,7 +124,7 @@ func (c *Conn) LocalAddr() net.Addr {
 	return c.Conn.LocalAddr()
 }
 
-// Return the specified remote addr, if there is one.
+// RemoteAddr returns the specified remote addr, if there is one.
 func (c *Conn) RemoteAddr() net.Addr {
 	if c.remoteAddr != nil {
 		return c.remoteAddr
