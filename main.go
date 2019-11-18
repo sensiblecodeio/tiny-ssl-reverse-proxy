@@ -17,7 +17,7 @@ import (
 )
 
 // Version number
-const Version = "0.16.0"
+const Version = "0.17.0"
 
 var message = `<!DOCTYPE html><html>
 <head>
