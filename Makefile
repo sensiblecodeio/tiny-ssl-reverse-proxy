@@ -4,7 +4,9 @@ VERSION?=$(shell git describe --tags --always --dirty)
 all: build
 
 build:
-	go build
+	docker build -t tiny-ssl-reverse-proxy .
+	docker run --rm tiny-ssl-reverse-proxy cat /go/bin/tiny-ssl-reverse-proxy > tiny-ssl-reverse-proxy
+	chmod u+x tiny-ssl-reverse-proxy
 
 install:
 	go install
