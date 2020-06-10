@@ -6,7 +6,7 @@ all: build
 build:
 	go build
 
-install: build
+install:
 	go install
 
 dist: dist/$(DIST_NAME)_darwin_amd64 dist/$(DIST_NAME)_linux_amd64
