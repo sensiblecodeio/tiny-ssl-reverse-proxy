@@ -1,0 +1,32 @@
+name: CI
+on:
+  push:
+    branches:
+      master
+  pull_request:
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build
+        run: |
+          make build
+
+      - name: Change compiled binary capabilities
+        run: |
+          sudo setcap 'cap_net_bind_service=+ep' ./tiny-ssl-reverse-proxy
+
+      - name: Generate TLS certificate
+        run: |
+          make fakecert
+
+      - name: Run and test redirect
+        run: |
+          ./tiny-ssl-reverse-proxy -key key.pem -cert crt.pem &
+          curl -v https://localhost:443 2>&1 | grep "self signed certificate"
