@@ -8,15 +8,23 @@ Usage:
 ------
 
 ```
-tiny-ssl-reverse-proxy [-key /etc/ssl/private/key.pem]
-                       [-cert /etc/ssl/private/cert.pem]
-                       [-listen :443] [-htpasswdFile htpasswd]
-                       -where http://forward:8080/
+tiny-ssl-reverse-proxy
 
-Options:
-    -key            Path to host private key
-    -cert           Path to host certificate
-    -listen         Bind address
-    -htpasswdFile   Path to htpasswd file
-    -where          Target host to forward to
+Usage of tiny-ssl-reverse-proxy:
+  -behind-tcp-proxy
+    	running behind TCP proxy (such as ELB or HAProxy)
+  -cert string
+    	Path to PEM certificate (default "/etc/ssl/private/cert.pem")
+  -flush-interval duration
+    	minimum duration between flushes to the client (default: off)
+  -key string
+    	Path to PEM key (default "/etc/ssl/private/key.pem")
+  -listen string
+    	Bind address to listen on (default ":443")
+  -logging
+    	log requests (default true)
+  -tls
+    	accept HTTPS connections (default true)
+  -where string
+    	Place to forward connections to (default "http://localhost:80")
 ```
