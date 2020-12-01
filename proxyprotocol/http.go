@@ -4,27 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
-	"time"
 )
-
-// Copied verbatim from net/http's server.go.
-// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
-// connections. It's used by ListenAndServe and ListenAndServeTLS so
-// dead TCP connections (e.g. closing laptop mid-download) eventually
-// go away.
-type tcpKeepAliveListener struct {
-	*net.TCPListener
-}
-
-func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
-	tc, err := ln.AcceptTCP()
-	if err != nil {
-		return
-	}
-	tc.SetKeepAlive(true)
-	tc.SetKeepAlivePeriod(3 * time.Minute)
-	return tc, nil
-}
 
 func BehindTCPProxyListenAndServeTLS(srv *http.Server, certFile, keyFile string) error {
 	// Begin copied almost verbatim from net/http
@@ -53,7 +33,7 @@ func BehindTCPProxyListenAndServeTLS(srv *http.Server, certFile, keyFile string)
 
 	// Wrap the listener with one understanding the PROXY protocol
 	var listener net.Listener
-	listener = tcpKeepAliveListener{ln.(*net.TCPListener)}
+	listener = ln.(*net.TCPListener)
 	listener = NewListener(listener)
 	listener = tls.NewListener(listener, srv.TLSConfig)
 	return srv.Serve(listener)
@@ -75,7 +55,7 @@ func BehindTCPProxyListenAndServe(srv *http.Server) error {
 	// End copied verbatim from net/http
 
 	// Wrap the listener with one understanding the PROXY protocol
-	listener := NewListener(tcpKeepAliveListener{ln.(*net.TCPListener)})
+	listener := NewListener(ln.(*net.TCPListener))
 	return srv.Serve(listener)
 }
 
