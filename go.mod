@@ -1,3 +1,3 @@
 module github.com/sensiblecodeio/tiny-ssl-reverse-proxy
 
-go 1.15
+go 1.16
