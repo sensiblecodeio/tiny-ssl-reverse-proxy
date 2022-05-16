@@ -1,4 +1,4 @@
-FROM golang:1.16.6-alpine
+FROM golang:1.18.2-alpine
 
 # Turn off cgo for a more static binary.
 # Specify cache directory so that we can run as nobody to build the binary.
@@ -12,4 +12,4 @@ COPY go.mod ./
 RUN go mod download
 
 COPY . .
-RUN go install -v
+RUN go install -v -buildvcs=false
