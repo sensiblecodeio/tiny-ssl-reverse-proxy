@@ -19,8 +19,10 @@ import (
 // Version number
 const Version = "0.21.0"
 
-var message = `<!DOCTYPE html><html>
+var message = `<!DOCTYPE html>
+<html lang="en">
 <head>
+<meta charset="utf-8">
 <title>
 Backend Unavailable
 </title>
