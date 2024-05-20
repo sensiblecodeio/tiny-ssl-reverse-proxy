@@ -29,4 +29,4 @@ jobs:
       - name: Run and test redirect
         run: |
           ./tiny-ssl-reverse-proxy -key key.pem -cert crt.pem &
-          curl -v https://localhost:443 2>&1 | grep "self signed certificate"
+          curl --cacert crt.pem https://localhost:443 | grep "Backend Unavailable"
