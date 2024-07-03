@@ -1,4 +1,4 @@
-FROM golang:1.22.3-alpine
+FROM golang:1.23rc1-alpine
 
 # Turn off cgo for a more static binary.
 # Specify cache directory so that we can run as nobody to build the binary.
